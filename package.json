@@ -1,0 +1,23 @@
+{
+    "name": "hexo-bluesky-feed",
+    "version": "0.1.0",
+    "description": "A Hexo deployer plugin to automatically publish posts to Bluesky when you publish a new blog post.",
+    "main": "index.js",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/antonbelev/hexo-bluesky-feed.git"
+    },
+    "keywords": [
+      "hexo",
+      "hexo-plugin",
+      "bluesky",
+      "deployer"
+    ],
+    "author": "Anton Belev",
+    "license": "MIT",
+    "dependencies": {
+      "axios": "^1.4.0",
+      "dotenv": "^16.0.3"
+    }
+  }
+  
