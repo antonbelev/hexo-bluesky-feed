@@ -2,6 +2,12 @@
 
 A Hexo deployer plugin that automatically publishes updates to your Bluesky account when you deploy your Hexo site.
 
+## Example
+
+Here is what `hexo-bluesky-feed` looks like in practise:
+
+<img src="resources/example-feed.png" alt="Example Feed" width="600" height="400">
+
 ## Installation
 
 Install the package via npm in your Hexo site directory:
