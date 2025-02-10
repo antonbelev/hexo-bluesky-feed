@@ -3,6 +3,8 @@
 const axios = require('axios');
 require('dotenv').config();
 
+console.log("hexo-bluesky-feed loaded");
+
 module.exports = function(hexo) {
   hexo.extend.deployer.register('bluesky-feed', async function(args) {
     // Allow users to skip posting via a command-line flag.
