@@ -71,6 +71,19 @@ hexo deploy
 
 The deployer will build your site and send an update to your Bluesky account using the provided configuration.
 
+## Development
+
+Follow these steps to publish a new version of `hexo-bluesky-feed` to `npm`:
+
+```bash
+npm login
+npm whoami
+npm version patch
+git add .
+git commit -m "Bump version to x.y.z"
+git push && git push --tags
+npm publish
+```
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
