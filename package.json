@@ -1,6 +1,6 @@
 {
     "name": "hexo-bluesky-feed",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "A Hexo deployer plugin to automatically publish posts to Bluesky when you publish a new blog post.",
     "main": "index.js",
     "repository": {
