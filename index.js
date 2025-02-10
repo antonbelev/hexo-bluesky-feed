@@ -6,7 +6,11 @@ require('dotenv').config();
 console.log("hexo-bluesky-feed loaded");
 
 module.exports = function(hexo) {
+  console.log("Executing hexo-bluesky-feed plugin initialization");
+
   hexo.extend.deployer.register('bluesky-feed', async function(args) {
+    console.log("Executing hexo-bluesky-feed deployer");
+    
     // Allow users to skip posting via a command-line flag.
     if (args.skipBluesky) {
       hexo.log.info("Skipping Bluesky update due to '--skipBluesky' flag.");
