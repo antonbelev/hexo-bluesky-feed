@@ -5,77 +5,115 @@ require('dotenv').config();
 
 module.exports = function(hexo) {
   hexo.extend.deployer.register('bluesky-feed', async function(args) {
-    // Allow users to skip posting via a command‑line flag.
+    // Allow users to skip posting via a command-line flag.
     if (args.skipBluesky) {
       hexo.log.info("Skipping Bluesky update due to '--skipBluesky' flag.");
       return;
     }
 
-    // Retrieve configuration from _config.yml and environment variables.
-    const config = hexo.config.blueskyFeed || {};
-    const apiUrl = process.env.BLUESKY_API_URL || config.apiUrl;
-    const accessToken = process.env.BLUESKY_ACCESS_TOKEN || config.accessToken;
-    if (!apiUrl || !accessToken) {
-      hexo.log.error('Missing configuration: Ensure BLUESKY_API_URL and BLUESKY_ACCESS_TOKEN are set.');
+    // Hardcode endpoint URLs (we manage these internally).
+    const createSessionUrl = "https://bsky.social/xrpc/com.atproto.server.createSession";
+    const createRecordUrl  = "https://bsky.social/xrpc/com.atproto.repo.createRecord";
+
+    // Retrieve the required credentials from environment variables.
+    const handle = process.env.BLUESKY_HANDLE;
+    const appPassword = process.env.BLUESKY_APP_PASSWORD;
+    if (!handle || !appPassword) {
+      hexo.log.error("Missing BLUESKY_HANDLE or BLUESKY_APP_PASSWORD in your environment.");
       return;
     }
 
-    // Determine the post URL.
-    // If a --postUrl argument is passed, use that; otherwise, compute from Hexo's locals.
+    // Retrieve additional configuration from _config.yml under the blueskyFeed section.
+    // Set blueskyFeed.url to your actual website URL (e.g. https://yourwebsite.com/), which is used for constructing post links.
+    const config = hexo.config.blueskyFeed || {};
+    const customMessageTemplate = config.message || "Just published new blog post: {title}. Check it out here: {url}";
+    const blueskyBaseUrl = config.url;
+    if (!blueskyBaseUrl) {
+      hexo.log.error("Missing blueskyFeed.url in _config.yml (set it to your website URL, e.g. https://yourwebsite.com/).");
+      return;
+    }
+
+    // Get the latest post's metadata from Hexo's locals.
+    const posts = hexo.locals.get('posts');
+    if (!posts || posts.length === 0) {
+      hexo.log.error("No posts found in Hexo locals; cannot determine the post URL.");
+      return;
+    }
+    const latestPost = posts.first();
+    const postTitle = latestPost.title || "New post";
+    // Allow user to override the post URL via a command-line option (--postUrl).
     let postUrl = args.postUrl;
     if (!postUrl) {
-      const posts = hexo.locals.get('posts');
-      if (posts && posts.length > 0) {
-        const latestPost = posts.first();
-        if (!latestPost) {
-          hexo.log.error("Could not retrieve the latest post from Hexo locals.");
-          return;
-        }
-        // Ensure the base URL is defined in _config.yml.
-        if (!hexo.config.url) {
-          hexo.log.error("hexo.config.url is not defined. Cannot automatically construct the post URL.");
-          return;
-        }
-        // Combine the base URL with the post's relative path.
-        postUrl = hexo.config.url + latestPost.path;
-      } else {
-        hexo.log.error("No posts found in Hexo locals; cannot determine the post URL.");
+      if (!latestPost.path) {
+        hexo.log.error("Latest post does not have a valid path.");
         return;
       }
+      // Combine your Bluesky-specific website URL with the post's relative path.
+      postUrl = blueskyBaseUrl + latestPost.path;
     }
 
-    // Retrieve the post title for use in the message.
-    let postTitle = "";
-    if (hexo.locals.get('posts') && hexo.locals.get('posts').length > 0) {
-      postTitle = hexo.locals.get('posts').first().title || "New post";
-    } else {
-      postTitle = "New post";
-    }
-
-    // Construct the dynamic message.
-    // Allow users to specify a custom template in _config.yml (blueskyFeed.message).
-    // Default: "Just published new blog post: {title}. Check it out here: {url}"
-    const defaultTemplate = config.message || "Just published new blog post: {title}. Check it out here: {url}";
-    const message = defaultTemplate
+    // Construct the message using the template.
+    const message = customMessageTemplate
       .replace('{title}', postTitle)
       .replace('{url}', postUrl);
 
-    hexo.log.info("Publishing update to Bluesky:", message);
+    // --- STEP 1: Obtain a Fresh Access Token and DID ---
+    // Call the createSession endpoint with your handle and app password.
+    let sessionResponse;
+    try {
+      sessionResponse = await axios.post(
+        createSessionUrl,
+        {
+          identifier: handle,
+          password: appPassword
+        },
+        {
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    } catch (error) {
+      hexo.log.error("Failed to create session with Bluesky:", error.response ? error.response.data : error.message);
+      return;
+    }
+
+    // Extract the access token and DID from the session response.
+    const sessionData = sessionResponse.data;
+    const accessJwt = sessionData.accessJwt;
+    const did = sessionData.did;
+    if (!accessJwt || !did) {
+      hexo.log.error("Session response did not contain accessJwt or did.");
+      return;
+    }
+    hexo.log.info("Obtained fresh access token and DID from Bluesky.");
+
+    // --- STEP 2: Post the Update to Bluesky ---
+    // Build the record payload according to Bluesky's API schema.
+    const recordPayload = {
+      repo: did, // Use the DID returned by the session creation.
+      collection: "app.bsky.feed.post",
+      record: {
+        "$type": "app.bsky.feed.post",
+        text: message,
+        createdAt: new Date().toISOString()
+      }
+    };
+
+    hexo.log.info("Publishing update to Bluesky with payload:", recordPayload);
 
     try {
-      const response = await axios.post(
-        apiUrl,
-        { content: message },
+      const recordResponse = await axios.post(
+        createRecordUrl,
+        recordPayload,
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
+            "Authorization": `Bearer ${accessJwt}`,
+            "Content-Type": "application/json"
           }
         }
       );
-      hexo.log.info("Successfully published update to Bluesky:", response.data);
+      hexo.log.info("Successfully published update to Bluesky:", recordResponse.data);
     } catch (error) {
-      hexo.log.error("Failed to publish update to Bluesky:", error.message);
+      hexo.log.error("Failed to publish update to Bluesky:", error.response ? error.response.data : error.message);
     }
   });
 };
