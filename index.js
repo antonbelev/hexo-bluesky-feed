@@ -1,5 +1,6 @@
 /* global hexo */
 'use strict';
+require('dotenv').config();
 
 console.log("hexo-bluesky-feed loaded");
 
