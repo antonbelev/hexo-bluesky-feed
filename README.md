@@ -1,6 +1,6 @@
 # hexo-bluesky-feed
 
-A Hexo plugin that automatically publishes updates to your Bluesky account when you generate your Hexo site.
+A Hexo plugin that automatically publishes your newest blog post to Bluesky whenever you generate your site with the `--bluesky` flag—giving you full control over when updates get posted.
 
 ## Example
 
@@ -30,10 +30,6 @@ blueskyFeed:
   # Use placeholders {title} and {url} for dynamic replacement.
   message: "Just published new blog post: {title}. Check it out here: {url}"
 ```
-
-**Important**: As of the latest version, this plugin hooks into `generateAfter`. That means it will automatically post to Bluesky when you run `hexo generate` or the shorthand `hexo g`.
-
-If you run `hexo deploy` **without** generating, this plugin won’t see any posts in the Hexo database and will not publish to Bluesky. Usually, Hexo’s deploy command does run generate if you have a valid deploy config in `_config.yml`, but if it does not, you’ll need to run hexo generate first.
 
 ## Obtaining Your BLUESKY_APP_PASSWORD
 
@@ -73,24 +69,18 @@ The plugin will use these environment variables to automatically obtain a fresh 
 After configuring your credentials and updating your `_config.yml`, simply run:
 
 ```bash
-hexo generate
+hexo generate --bluesky
 ```
 
 or 
 
 ```bash
-hexo g
+hexo g --bluesky
 ```
 
-Then (if needed) deploy your site via `hexo deploy`. By default, `hexo deploy` may also generate your site if you have a valid deploy config. If not, remember to run `hexo generate` manually so that the plugin sees your new posts.
+If you run `hexo generate` without `--bluesky`, the plugin will skip posting.
 
-## Skipping the Bluesky Post
-
-If you want to generate the site without posting to Bluesky (e.g., for local testing), you can add the `--skipBluesky` flag:
-
-```bash
-hexo generate --skipBluesky
-```
+Then (if needed) deploy your site via `hexo deploy`. By default, `hexo deploy `may generate your site if you have a valid deploy config—but it typically will not forward the `--bluesky` flag. If you need to post to Bluesky as part of deploy, ensure you pass the flag or generate with `--bluesky` before deploying.
 
 ## Development
 
