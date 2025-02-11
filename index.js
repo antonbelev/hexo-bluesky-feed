@@ -1,8 +1,9 @@
-/* global hexo */
 'use strict';
 require('dotenv').config();
 
-console.log("hexo-bluesky-feed loaded");
+// We require a separate function that handles the Bluesky posting:
+const doBlueskyPost = require('./lib/bluesky');
 
-// Register the deployer by delegating to our lib/deployer.js module
-hexo.extend.deployer.register('bluesky-feed', require('./lib/deployer'));
+hexo.on('generateAfter', async () => {
+  await doBlueskyPost.call(hexo);
+});

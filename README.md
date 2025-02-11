@@ -1,6 +1,6 @@
 # hexo-bluesky-feed
 
-A Hexo deployer plugin that automatically publishes updates to your Bluesky account when you deploy your Hexo site.
+A Hexo plugin that automatically publishes updates to your Bluesky account when you generate your Hexo site.
 
 ## Example
 
@@ -20,12 +20,9 @@ npm install hexo-bluesky-feed --save
 
 ### Hexo Configuration
 
-In your Hexo site's `_config.yml`, add a deploy section that uses the bluesky-feed deployer. You can also include non-sensitive defaults under the `blueskyFeed` section:
+In your Hexo site's `_config.yml`, you can add a blueskyFeed section for your Bluesky-related
 
 ```yml
-deploy:
-  type: bluesky-feed
-
 blueskyFeed:
   # The website URL used for constructing post links on Bluesky.
   url: "https://yourwebsite.com/"
@@ -33,6 +30,10 @@ blueskyFeed:
   # Use placeholders {title} and {url} for dynamic replacement.
   message: "Just published new blog post: {title}. Check it out here: {url}"
 ```
+
+**Important**: As of the latest version, this plugin hooks into `generateAfter`. That means it will automatically post to Bluesky when you run `hexo generate` or the shorthand `hexo g`.
+
+If you run `hexo deploy` **without** generating, this plugin won’t see any posts in the Hexo database and will not publish to Bluesky. Usually, Hexo’s deploy command does run generate if you have a valid deploy config in `_config.yml`, but if it does not, you’ll need to run hexo generate first.
 
 ## Obtaining Your BLUESKY_APP_PASSWORD
 
@@ -72,10 +73,24 @@ The plugin will use these environment variables to automatically obtain a fresh 
 After configuring your credentials and updating your `_config.yml`, simply run:
 
 ```bash
-hexo deploy
+hexo generate
 ```
 
-The deployer will build your site and send an update to your Bluesky account using the provided configuration.
+or 
+
+```bash
+hexo g
+```
+
+Then (if needed) deploy your site via `hexo deploy`. By default, `hexo deploy` may also generate your site if you have a valid deploy config. If not, remember to run `hexo generate` manually so that the plugin sees your new posts.
+
+## Skipping the Bluesky Post
+
+If you want to generate the site without posting to Bluesky (e.g., for local testing), you can add the `--skipBluesky` flag:
+
+```bash
+hexo generate --skipBluesky
+```
 
 ## Development
 
